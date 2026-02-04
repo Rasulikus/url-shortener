@@ -2,6 +2,7 @@ package handler
 
 import (
 	"errors"
+	"log"
 	"net/http"
 
 	"github.com/Rasulikus/url-shortener/internal/service"
@@ -13,7 +14,12 @@ type errorResponse struct {
 }
 
 func ErrorToHttp(c *gin.Context, err error) {
+	if err != nil {
+		log.Print(err.Error())
+	}
 	switch {
+	case errors.Is(err, InvalidInputError):
+		c.AbortWithStatusJSON(http.StatusBadRequest, errorResponse{Error: "invalid input"})
 	case errors.Is(err, service.ErrInvalidInput):
 		c.AbortWithStatusJSON(http.StatusBadRequest, errorResponse{Error: "invalid input"})
 	case errors.Is(err, service.ErrNotFound):

@@ -14,6 +14,6 @@ var (
 )
 
 type URLService interface {
-	CreateOrGet(ctx context.Context, longURL string) (*model.URL, error)
+	CreateOrGet(ctx context.Context, longURL string) (string, error)
 	GetByAlias(ctx context.Context, alias string) (*model.URL, error)
 }

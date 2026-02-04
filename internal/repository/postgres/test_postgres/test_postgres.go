@@ -25,7 +25,7 @@ var (
 )
 
 func NewTestPool() (*pgxpool.Pool, error) {
-	pool, err := postgres.NewPool(context.Background(), testDBCfg)
+	pool, err := postgres.NewPool(testDBCfg)
 	if err != nil {
 		return nil, err
 	}

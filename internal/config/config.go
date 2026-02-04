@@ -12,9 +12,11 @@ import (
 )
 
 const (
-	keyEnv = "ENV"
+	keyLogLevel = "LOG_LEVEL"
 
 	keyBaseURL = "BASE_URL"
+
+	keyStorage = "STORAGE"
 
 	keyHTTPHost         = "HTTP_HOST"
 	keyHTTPPort         = "HTTP_PORT"
@@ -32,7 +34,7 @@ const (
 	keyPGMinConns        = "PG_MIN_CONNS"
 	keyPGMaxConns        = "PG_MAX_CONNS"
 	keyPGMaxConnLifeTime = "PG_MAX_CONN_LIFETIME"
-	keyPGMaxIdleTime     = "PG_MAX_IDLE_TIME"
+	keyPGMaxIdleTime     = "PG_MAX_CONN_IDLE_TIME"
 	keyShutdownTimeout   = "SHUTDOWN_TIMEOUT"
 )
 
@@ -72,9 +74,9 @@ func (cfg DBConfig) DSN() string {
 }
 
 type Config struct {
-	ENV     string
-	BaseURL string
-	Storage string // memory|postgresql
+	LogLevel string
+	BaseURL  string
+	Storage  string // memory|postgresql
 
 	HTTP HTTPConfig
 	DB   *DBConfig
@@ -114,19 +116,24 @@ func getEnvDuration(key string) (time.Duration, error) {
 	return d, nil
 }
 
-func New(storage string) (*Config, error) {
+func New() (*Config, error) {
 	if err := godotenv.Load(); err != nil {
 		return nil, fmt.Errorf("error loading .env file: %w", err)
 	}
 	cfg := new(Config)
 	var err error
 
-	cfg.ENV, err = getEnv(keyEnv)
+	cfg.LogLevel, err = getEnv(keyLogLevel)
 	if err != nil {
 		return nil, err
 	}
 
 	cfg.BaseURL, err = getEnv(keyBaseURL)
+	if err != nil {
+		return nil, err
+	}
+
+	cfg.Storage, err = getEnv(keyStorage)
 	if err != nil {
 		return nil, err
 	}
@@ -152,9 +159,10 @@ func New(storage string) (*Config, error) {
 		return nil, err
 	}
 
-	switch storage {
+	switch cfg.Storage {
 	case "memory":
 	case "postgresql":
+		cfg.DB = new(DBConfig)
 		cfg.DB.Host, err = getEnv(keyDBHost)
 		if err != nil {
 			return nil, err
@@ -197,7 +205,7 @@ func New(storage string) (*Config, error) {
 			return nil, err
 		}
 	default:
-		return nil, fmt.Errorf("unknown storage type, expected memory or postgresql: %s", storage)
+		return nil, fmt.Errorf("unknown storage type, expected memory or postgresql: %s", cfg.Storage)
 	}
 
 	cfg.ShutdownTimeout, err = getEnvDuration(keyShutdownTimeout)

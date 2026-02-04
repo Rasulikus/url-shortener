@@ -13,7 +13,7 @@ type Repo struct {
 	m *Memory
 }
 
-func NewRepo(m *Memory) (*Repo, error) {
+func NewRepository(m *Memory) (*Repo, error) {
 	if m == nil {
 		return nil, fmt.Errorf("memory repository is nil")
 	}
@@ -23,11 +23,15 @@ func NewRepo(m *Memory) (*Repo, error) {
 }
 
 func (r *Repo) CreateOrGet(ctx context.Context, url *model.URL) (*model.URL, error) {
+	_ = ctx
 	r.m.mu.Lock()
 	defer r.m.mu.Unlock()
 
 	if existing, ok := r.m.byLong[url.LongURL]; ok {
-		c := *existing
+		url.ID = existing.ID
+		url.Alias = existing.Alias
+		url.CreatedAt = existing.CreatedAt
+		c := *url
 		return &c, nil
 	}
 
@@ -35,16 +39,29 @@ func (r *Repo) CreateOrGet(ctx context.Context, url *model.URL) (*model.URL, err
 		return nil, repository.ErrAlreadyExists
 	}
 
-	u := &model.URL{
-		ID:        r.m.nextID,
-		LongURL:   url.LongURL,
-		Alias:     url.Alias,
-		CreatedAt: time.Now().UTC(),
-	}
+	url.ID = r.m.nextID
+	url.CreatedAt = time.Now().UTC()
+
 	r.m.nextID++
 
-	r.m.byAlias[url.Alias] = u
-	r.m.byLong[url.LongURL] = u
+	r.m.byAlias[url.Alias] = url
+	r.m.byLong[url.LongURL] = url
+
+	c := *url
+	return &c, nil
+}
+
+func (r *Repo) GetByAlias(ctx context.Context, alias string) (*model.URL, error) {
+	_ = ctx
+
+	r.m.mu.RLock()
+	defer r.m.mu.RUnlock()
+
+	u, ok := r.m.byAlias[alias]
+	if !ok {
+		return nil, repository.ErrNotFound
+	}
+
 	c := *u
 	return &c, nil
 }
