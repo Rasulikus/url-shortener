@@ -1,0 +1,15 @@
+services:
+  postgres:
+    container_name: url-shortener-postgres
+    image: postgres:18.1
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_DB: ${DB_NAME}
+      PGDATA: /data/postgres
+    volumes:
+      - ./postgres-data:/data/postgres
+    ports:
+      - "${DB_PORT}:5432"
