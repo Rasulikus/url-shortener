@@ -1,15 +1,19 @@
 package service
 
 import (
+	"context"
 	"errors"
+
+	"github.com/Rasulikus/url-shortener/internal/domain/model"
 )
 
 var (
-	ErrInvalidInput        = errors.New("service: invalid input")
-	ErrUserAlreadyExists   = errors.New("service: user already exists")
-	ErrInvalidCredentials  = errors.New("service: invalid credentials")
-	ErrRefreshTokenInvalid = errors.New("service: refresh token invalid")
+	ErrInvalidInput   = errors.New("service: invalid input")
+	ErrNotFound       = errors.New("service: not found")
+	ErrAliasCollision = errors.New("service: failed to generate unique alias")
 )
 
 type URLService interface {
+	CreateOrGet(ctx context.Context, longURL string) (*model.URL, error)
+	GetByAlias(ctx context.Context, alias string) (*model.URL, error)
 }

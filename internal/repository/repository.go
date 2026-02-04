@@ -13,6 +13,6 @@ var (
 )
 
 type URLRepository interface {
-	CreateOrGet(ctx context.Context, url *model.URL) (*model.URL, error)
+	CreateOrGet(ctx context.Context, u *model.URL) (*model.URL, error)
 	GetByAlias(ctx context.Context, alias string) (*model.URL, error)
 }

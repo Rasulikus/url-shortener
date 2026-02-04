@@ -25,7 +25,7 @@ func NewRepository(pool *pgxpool.Pool) (*Repo, error) {
 	}, nil
 }
 
-func (r *Repo) CreateOrGet(ctx context.Context, url *model.URL) (*model.URL, error) {
+func (r *Repo) CreateOrGet(ctx context.Context, u *model.URL) (*model.URL, error) {
 	const q = `
 	INSERT INTO urls (long_url, alias)
 	VALUES ($1, $2)
@@ -33,16 +33,16 @@ func (r *Repo) CreateOrGet(ctx context.Context, url *model.URL) (*model.URL, err
 	SET long_url = excluded.long_url
 	RETURNING id, long_url, alias, created_at;
 `
-	err := r.pool.QueryRow(ctx, q, url.LongURL, url.Alias).Scan(&url.ID, &url.LongURL, &url.Alias, &url.CreatedAt)
+	err := r.pool.QueryRow(ctx, q, u.LongURL, u.Alias).Scan(&u.ID, &u.LongURL, &u.Alias, &u.CreatedAt)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
 			return nil, repository.ErrAlreadyExists
 		}
-		return nil, fmt.Errorf("insert url: %w", err)
+		return nil, fmt.Errorf("insert u: %w", err)
 	}
 
-	return url, nil
+	return u, nil
 }
 
 func (r *Repo) GetByAlias(ctx context.Context, alias string) (*model.URL, error) {
