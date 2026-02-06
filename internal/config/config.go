@@ -53,7 +53,8 @@ const (
 	keyPGMaxConns        = "PG_MAX_CONNS"
 	keyPGMaxConnLifeTime = "PG_MAX_CONN_LIFETIME"
 	keyPGMaxIdleTime     = "PG_MAX_CONN_IDLE_TIME"
-	keyShutdownTimeout   = "SHUTDOWN_TIMEOUT"
+
+	keyAliasSecret = "ALIAS_SECRET"
 )
 
 type HTTPConfig struct {
@@ -99,7 +100,7 @@ type Config struct {
 	HTTP HTTPConfig
 	DB   *DBConfig
 
-	ShutdownTimeout time.Duration
+	AliasSecret uint64
 }
 
 func getEnv(key string) (string, error) {
@@ -122,6 +123,20 @@ func getEnvInt(key string) (int, error) {
 	return num, nil
 }
 
+func getEnvUint64(key string) (uint64, error) {
+	value, err := getEnv(key)
+	if err != nil {
+		return 0, err
+	}
+
+	n, err := strconv.ParseUint(value, 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("environment variable %s is not a valid uint64: %q: %w", key, value, err)
+	}
+
+	return n, nil
+}
+
 func getEnvDuration(key string) (time.Duration, error) {
 	value, err := getEnv(key)
 	if err != nil {
@@ -136,8 +151,11 @@ func getEnvDuration(key string) (time.Duration, error) {
 
 func New() (*Config, error) {
 	if err := godotenv.Load(); err != nil {
-		return nil, fmt.Errorf("error loading .env file: %w", err)
+		if !os.IsNotExist(err) {
+			return nil, fmt.Errorf("error loading .env file: %w", err)
+		}
 	}
+
 	cfg := new(Config)
 	var err error
 
@@ -228,6 +246,11 @@ func New() (*Config, error) {
 		}
 	default:
 		return nil, fmt.Errorf("unknown storage type, expected memory or postgresql: %s", cfg.Storage)
+	}
+
+	cfg.AliasSecret, err = getEnvUint64(keyAliasSecret)
+	if err != nil {
+		return nil, err
 	}
 
 	return cfg, nil

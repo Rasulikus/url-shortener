@@ -1,4 +1,4 @@
-package alias
+package generator
 
 import (
 	"testing"
@@ -6,13 +6,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestGenerator_ErrInvalidLength(t *testing.T) {
-	gen, err := New(-5)
+func TestRandomGenerator_ErrInvalidLength(t *testing.T) {
+	gen, err := NewRandom(-5)
 	require.ErrorIs(t, ErrInvalidLength, err)
 	require.Nil(t, gen)
 }
 
-func TestGenerator_GenerateAlias(t *testing.T) {
+func TestRandomGenerator_GenerateAlias(t *testing.T) {
 	cases := []struct {
 		name string
 		len  int
@@ -24,7 +24,7 @@ func TestGenerator_GenerateAlias(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			gen, err := New(tc.len)
+			gen, err := NewRandom(tc.len)
 			require.NoError(t, err)
 			require.NotNil(t, gen)
 
@@ -34,4 +34,17 @@ func TestGenerator_GenerateAlias(t *testing.T) {
 			require.Len(t, a, tc.len)
 		})
 	}
+}
+
+func TestRandomGenerator_Uniqueness(t *testing.T) {
+	gen, err := NewRandom(DefaultLength)
+	require.NoError(t, err)
+
+	a1, err := gen.NewAlias()
+	require.NoError(t, err)
+
+	a2, err := gen.NewAlias()
+	require.NoError(t, err)
+
+	require.NotEqual(t, a1, a2, "aliases must be unique")
 }

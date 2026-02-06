@@ -1,12 +1,15 @@
 package app
 
 import (
+	"context"
+	"time"
+
 	"github.com/Rasulikus/url-shortener/internal/config"
 	"github.com/Rasulikus/url-shortener/internal/repository/memory"
 	"github.com/Rasulikus/url-shortener/internal/repository/postgres"
 	urlService "github.com/Rasulikus/url-shortener/internal/service/url"
 	"github.com/Rasulikus/url-shortener/internal/transport/http"
-	"github.com/Rasulikus/url-shortener/internal/utils/alias"
+	"github.com/Rasulikus/url-shortener/internal/utils/generator"
 	"github.com/Rasulikus/url-shortener/internal/utils/logger"
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
@@ -42,12 +45,20 @@ func App(cfg *config.Config) *gin.Engine {
 		}
 	}
 
-	gen, err := alias.New(alias.DefaultLength)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	nextID, err := urlRepo.GetLastID(ctx)
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to initialize next id")
+	}
+
+	gen, err := generator.NewCounter(nextID, cfg.AliasSecret, generator.DefaultLength)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to initialize alias generator")
 	}
 
-	urlServ, err := urlService.NewService(cfg.BaseURL, urlRepo, gen)
+	urlServ, err := urlService.NewService(cfg.BaseURL, gen, urlRepo)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to initialize url service")
 	}

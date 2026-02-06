@@ -22,6 +22,10 @@ func NewRepository(m *Memory) (*Repo, error) {
 	}, nil
 }
 
+func (r *Repo) GetLastID(_ context.Context) (uint64, error) {
+	return 0, nil
+}
+
 func (r *Repo) CreateOrGet(_ context.Context, url *model.URL) (*model.URL, error) {
 	r.m.mu.Lock()
 	defer r.m.mu.Unlock()

@@ -114,7 +114,7 @@ func TestURLHandler_Create_AliasCollision(t *testing.T) {
 		s := mocks.NewMockURLService(t)
 
 		s.On("CreateOrGet", mock.Anything, "http://example.com").
-			Return("", service.ErrAliasCollision).
+			Return("", service.ErrConflict).
 			Once()
 
 		h := NewURLHandler(s)
@@ -127,7 +127,7 @@ func TestURLHandler_Create_AliasCollision(t *testing.T) {
 		r.ServeHTTP(w, req)
 
 		require.Equal(t, http.StatusConflict, w.Code)
-		require.JSONEq(t, `{"error":"alias collision"}`, w.Body.String())
+		require.JSONEq(t, `{"error":"conflict"}`, w.Body.String())
 
 		s.AssertExpectations(t)
 	})

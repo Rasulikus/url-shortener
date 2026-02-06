@@ -12,6 +12,7 @@ type errorResponse struct {
 	Error string `json:"error"`
 }
 
+// ErrorToHttp преобразует ошибки приложения в HTTP-ответы.
 func ErrorToHttp(c *gin.Context, err error) {
 	switch {
 	case errors.Is(err, ErrInvalidInput):
@@ -20,8 +21,8 @@ func ErrorToHttp(c *gin.Context, err error) {
 		c.AbortWithStatusJSON(http.StatusBadRequest, errorResponse{Error: "invalid input"})
 	case errors.Is(err, service.ErrNotFound):
 		c.AbortWithStatusJSON(http.StatusNotFound, errorResponse{Error: "not found"})
-	case errors.Is(err, service.ErrAliasCollision):
-		c.AbortWithStatusJSON(http.StatusConflict, errorResponse{Error: "alias collision"})
+	case errors.Is(err, service.ErrConflict):
+		c.AbortWithStatusJSON(http.StatusConflict, errorResponse{Error: "conflict"})
 	default:
 		c.AbortWithStatusJSON(http.StatusInternalServerError, errorResponse{Error: "internal server error"})
 	}

@@ -1,34 +1,26 @@
-package alias
+package generator
 
 import (
 	"crypto/rand"
-	"errors"
 	"fmt"
 	"math/big"
 )
 
-const (
-	DefaultLength = 10
-	alphabet      = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
-)
-
-var ErrInvalidLength = errors.New("alias generator: invalid length")
-
-type Generator struct {
+type RandomGenerator struct {
 	length int
 }
 
-func New(length int) (*Generator, error) {
+func NewRandom(length int) (*RandomGenerator, error) {
 	if length <= 0 {
 		return nil, ErrInvalidLength
 	}
 
-	return &Generator{
+	return &RandomGenerator{
 		length: length,
 	}, nil
 }
 
-func (g *Generator) NewAlias() (string, error) {
+func (g *RandomGenerator) NewAlias() (string, error) {
 	b := make([]byte, g.length)
 	lenAlpha := big.NewInt(int64(len(alphabet)))
 

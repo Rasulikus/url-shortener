@@ -26,6 +26,19 @@ func NewRepository(pool *pgxpool.Pool) (*Repo, error) {
 	}, nil
 }
 
+func (r *Repo) GetLastID(ctx context.Context) (uint64, error) {
+	const q = `
+	SELECT COALESCE(MAX(id), 0)
+	FROM urls;
+`
+	var id uint64
+	err := r.pool.QueryRow(ctx, q).Scan(&id)
+	if err != nil {
+		return 0, fmt.Errorf("repository: GetLastID: %w", err)
+	}
+	return id, nil
+}
+
 func (r *Repo) CreateOrGet(ctx context.Context, u *model.URL) (*model.URL, error) {
 	const q = `
 	INSERT INTO urls (long_url, alias)

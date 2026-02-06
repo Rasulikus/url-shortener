@@ -10,7 +10,10 @@ import (
 )
 
 type URLService interface {
+	// CreateOrGet создаёт короткую ссылку для longURL или возвращает уже существующую.
 	CreateOrGet(ctx context.Context, longURL string) (string, error)
+
+	// GetLongURLByAlias возвращает исходный longURL по алиасу.
 	GetLongURLByAlias(ctx context.Context, alias string) (string, error)
 }
 

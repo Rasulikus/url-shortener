@@ -4,13 +4,12 @@ import (
 	"context"
 	"errors"
 	"testing"
-	"time"
 
 	"github.com/Rasulikus/url-shortener/internal/model"
 	"github.com/Rasulikus/url-shortener/internal/repository"
 	"github.com/Rasulikus/url-shortener/internal/service"
 	"github.com/Rasulikus/url-shortener/internal/service/url/mocks"
-	"github.com/Rasulikus/url-shortener/internal/utils/alias"
+	"github.com/Rasulikus/url-shortener/internal/utils/generator"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
@@ -18,10 +17,10 @@ import (
 func newService(t *testing.T, repo URLRepository) *Service {
 	t.Helper()
 
-	gen, err := alias.New(alias.DefaultLength)
+	gen, err := generator.NewRandom(generator.DefaultLength)
 	require.NoError(t, err)
 
-	s, err := NewService("http://localhost:8080", repo, gen)
+	s, err := NewService("http://localhost:8080", gen, repo)
 	require.NoError(t, err)
 	return s
 }
@@ -125,43 +124,7 @@ func TestService_CreateOrGet_InvalidInput(t *testing.T) {
 	})
 }
 
-func TestService_CreateOrGet_ConflictThenSuccess(t *testing.T) {
-	t.Run("conflict then success", func(t *testing.T) {
-		repo := new(mocks.MockURLRepository)
-
-		match := mock.MatchedBy(func(u *model.URL) bool {
-			return u != nil &&
-				u.ID == 0 &&
-				u.LongURL == "http://example.com" &&
-				u.Alias != "" &&
-				u.CreatedAt.IsZero()
-		})
-
-		repo.On("CreateOrGet", mock.Anything, match).
-			Return(nil, repository.ErrConflict).
-			Once()
-
-		repo.On("CreateOrGet", mock.Anything, match).
-			Return(&model.URL{
-				ID:        1,
-				LongURL:   "http://example.com",
-				Alias:     "aa",
-				CreatedAt: time.Now(),
-			}, nil).
-			Once()
-
-		s := newService(t, repo)
-
-		got, err := s.CreateOrGet(context.Background(), "http://example.com")
-
-		require.NoError(t, err)
-		require.Equal(t, "http://localhost:8080/aa", got)
-
-		repo.AssertExpectations(t)
-	})
-}
-
-func TestService_CreateOrGet_ConflictTwice(t *testing.T) {
+func TestService_CreateOrGet_Conflict(t *testing.T) {
 	repo := new(mocks.MockURLRepository)
 
 	repo.On("CreateOrGet", mock.Anything, mock.MatchedBy(func(u *model.URL) bool {
@@ -172,13 +135,13 @@ func TestService_CreateOrGet_ConflictTwice(t *testing.T) {
 			u.CreatedAt.IsZero()
 	})).
 		Return(nil, repository.ErrConflict).
-		Twice()
+		Once()
 
 	s := newService(t, repo)
 
 	gotAlias, err := s.CreateOrGet(context.Background(), "http://example.com")
 
-	require.ErrorIs(t, err, service.ErrAliasCollision)
+	require.ErrorIs(t, err, service.ErrConflict)
 	require.Zero(t, gotAlias)
 
 	repo.AssertExpectations(t)
