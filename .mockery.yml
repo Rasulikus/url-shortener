@@ -1,0 +1,24 @@
+all: false
+template: testify
+formatter: goimports
+log-level: info
+force-file-write: true
+
+packages:
+  github.com/Rasulikus/url-shortener/internal/service/url:
+    config:
+      dir: internal/service/url/mocks
+      pkgname: mocks
+      filename: url_repository_mock.go
+      structname: Mock{{.InterfaceName}}
+    interfaces:
+      URLRepository:
+
+  github.com/Rasulikus/url-shortener/internal/transport/http:
+    config:
+      dir: internal/transport/http/mocks
+      pkgname: mocks
+      filename: url_service_mock.go
+      structname: Mock{{.InterfaceName}}
+    interfaces:
+      URLService:

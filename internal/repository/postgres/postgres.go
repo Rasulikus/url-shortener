@@ -13,6 +13,7 @@ func NewPool(cfg *config.DBConfig) (*pgxpool.Pool, error) {
 	if cfg == nil {
 		return nil, fmt.Errorf("db config is nil")
 	}
+
 	poolcfg, err := pgxpool.ParseConfig(cfg.DSN())
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse dsn: %w", err)
@@ -25,6 +26,7 @@ func NewPool(cfg *config.DBConfig) (*pgxpool.Pool, error) {
 
 	connectCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+
 	pool, err := pgxpool.NewWithConfig(connectCtx, poolcfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to postgres: %w", err)

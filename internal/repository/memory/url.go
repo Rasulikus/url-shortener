@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Rasulikus/url-shortener/internal/domain/model"
+	"github.com/Rasulikus/url-shortener/internal/model"
 	"github.com/Rasulikus/url-shortener/internal/repository"
 )
 
@@ -22,8 +22,7 @@ func NewRepository(m *Memory) (*Repo, error) {
 	}, nil
 }
 
-func (r *Repo) CreateOrGet(ctx context.Context, url *model.URL) (*model.URL, error) {
-	_ = ctx
+func (r *Repo) CreateOrGet(_ context.Context, url *model.URL) (*model.URL, error) {
 	r.m.mu.Lock()
 	defer r.m.mu.Unlock()
 
@@ -36,7 +35,7 @@ func (r *Repo) CreateOrGet(ctx context.Context, url *model.URL) (*model.URL, err
 	}
 
 	if _, ok := r.m.byAlias[url.Alias]; ok {
-		return nil, repository.ErrAlreadyExists
+		return nil, repository.ErrConflict
 	}
 
 	url.ID = r.m.nextID
@@ -51,9 +50,7 @@ func (r *Repo) CreateOrGet(ctx context.Context, url *model.URL) (*model.URL, err
 	return &c, nil
 }
 
-func (r *Repo) GetByAlias(ctx context.Context, alias string) (*model.URL, error) {
-	_ = ctx
-
+func (r *Repo) GetByAlias(_ context.Context, alias string) (*model.URL, error) {
 	r.m.mu.RLock()
 	defer r.m.mu.RUnlock()
 
@@ -64,4 +61,16 @@ func (r *Repo) GetByAlias(ctx context.Context, alias string) (*model.URL, error)
 
 	c := *u
 	return &c, nil
+}
+
+func (r *Repo) GetLongURLByAlias(_ context.Context, alias string) (string, error) {
+	r.m.mu.RLock()
+	defer r.m.mu.RUnlock()
+
+	u, ok := r.m.byAlias[alias]
+	if !ok {
+		return "", repository.ErrNotFound
+	}
+
+	return u.LongURL, nil
 }

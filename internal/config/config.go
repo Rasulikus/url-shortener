@@ -6,10 +6,28 @@ import (
 	"os"
 	"path"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/joho/godotenv"
 )
+
+type Storage string
+
+const (
+	StoragePostgres Storage = "postgresql"
+	StorageMemory   Storage = "memory"
+)
+
+func ParseStorage(s string) (Storage, error) {
+	v := Storage(strings.ToLower(strings.TrimSpace(s)))
+	switch v {
+	case StoragePostgres, StorageMemory:
+		return v, nil
+	default:
+		return "", fmt.Errorf("unknown storage: %q", s)
+	}
+}
 
 const (
 	keyLogLevel = "LOG_LEVEL"
@@ -76,7 +94,7 @@ func (cfg DBConfig) DSN() string {
 type Config struct {
 	LogLevel string
 	BaseURL  string
-	Storage  string // memory|postgresql
+	Storage  Storage // memory|postgresql
 
 	HTTP HTTPConfig
 	DB   *DBConfig
@@ -133,7 +151,11 @@ func New() (*Config, error) {
 		return nil, err
 	}
 
-	cfg.Storage, err = getEnv(keyStorage)
+	st, err := getEnv(keyStorage)
+	if err != nil {
+		return nil, err
+	}
+	cfg.Storage, err = ParseStorage(st)
 	if err != nil {
 		return nil, err
 	}
@@ -160,8 +182,8 @@ func New() (*Config, error) {
 	}
 
 	switch cfg.Storage {
-	case "memory":
-	case "postgresql":
+	case StorageMemory:
+	case StoragePostgres:
 		cfg.DB = new(DBConfig)
 		cfg.DB.Host, err = getEnv(keyDBHost)
 		if err != nil {
@@ -206,11 +228,6 @@ func New() (*Config, error) {
 		}
 	default:
 		return nil, fmt.Errorf("unknown storage type, expected memory or postgresql: %s", cfg.Storage)
-	}
-
-	cfg.ShutdownTimeout, err = getEnvDuration(keyShutdownTimeout)
-	if err != nil {
-		return nil, err
 	}
 
 	return cfg, nil

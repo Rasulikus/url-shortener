@@ -1,11 +1,10 @@
-package test_postgres
+package postgres
 
 import (
 	"context"
 	"time"
 
 	"github.com/Rasulikus/url-shortener/internal/config"
-	"github.com/Rasulikus/url-shortener/internal/repository/postgres"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -25,7 +24,7 @@ var (
 )
 
 func NewTestPool() (*pgxpool.Pool, error) {
-	pool, err := postgres.NewPool(testDBCfg)
+	pool, err := NewPool(testDBCfg)
 	if err != nil {
 		return nil, err
 	}

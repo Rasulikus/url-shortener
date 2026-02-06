@@ -1,4 +1,4 @@
-package url
+package postgres
 
 import (
 	"context"
@@ -6,9 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Rasulikus/url-shortener/internal/domain/model"
+	"github.com/Rasulikus/url-shortener/internal/model"
 	"github.com/Rasulikus/url-shortener/internal/repository"
-	"github.com/Rasulikus/url-shortener/internal/repository/postgres/test_postgres"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -18,7 +17,7 @@ var testPool *pgxpool.Pool
 
 func TestMain(m *testing.M) {
 	var err error
-	testPool, err = test_postgres.NewTestPool()
+	testPool, err = NewTestPool()
 	if err != nil {
 		os.Exit(1)
 	}
@@ -51,7 +50,7 @@ func setupTestSuite(t *testing.T) *testSuite {
 
 	ctx, cancel := s.ctx2s()
 	defer cancel()
-	require.NoError(t, test_postgres.TruncateUrls(ctx, s.pool))
+	require.NoError(t, TruncateUrls(ctx, s.pool))
 
 	return s
 }
@@ -138,10 +137,54 @@ func TestRepo_GetByAliasCtxCancelErr(t *testing.T) {
 	ctx, cancel := s.ctx2s()
 	cancel()
 	t.Run("ctx err", func(t *testing.T) {
-		get, err := s.urlRepo.GetByAlias(ctx, newU.LongURL)
+		get, err := s.urlRepo.GetByAlias(ctx, newU.Alias)
 		require.ErrorIs(t, err, context.Canceled)
 		require.Nil(t, get)
 	})
+}
+
+func TestRepo_GetLongURLByAlias(t *testing.T) {
+	s := setupTestSuite(t)
+
+	u := &model.URL{
+		LongURL: "https://rkrkrkrk.com",
+		Alias:   "aa",
+	}
+
+	newU := insertURL(t, s.ctx, s.pool, u)
+
+	cases := []struct {
+		name  string
+		alias string
+		check func(t *testing.T, get string, err error)
+	}{
+		{
+			name:  "found",
+			alias: u.Alias,
+			check: func(t *testing.T, get string, err error) {
+				require.NoError(t, err)
+				assert.Equal(t, newU.LongURL, get)
+			},
+		},
+		{
+			name:  "not found",
+			alias: "bb",
+			check: func(t *testing.T, get string, err error) {
+				require.Zero(t, get)
+				require.ErrorIs(t, err, repository.ErrNotFound)
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx, candel := s.ctx2s()
+			defer candel()
+			get, err := s.urlRepo.GetLongURLByAlias(ctx, tc.alias)
+			tc.check(t, get, err)
+		})
+	}
+
 }
 
 func TestRepo_CreateOrGet(t *testing.T) {
@@ -154,6 +197,10 @@ func TestRepo_CreateOrGet(t *testing.T) {
 	uWithExistingLongURL := &model.URL{
 		LongURL: u.LongURL,
 		Alias:   "bb",
+	}
+	uWithExistingAlias := &model.URL{
+		LongURL: "htttp://aaaa.com",
+		Alias:   "aa",
 	}
 	cases := []struct {
 		name  string
@@ -177,7 +224,16 @@ func TestRepo_CreateOrGet(t *testing.T) {
 			url:  uWithExistingLongURL,
 			check: func(t *testing.T, get *model.URL, err error) {
 				require.NoError(t, err)
-				assert.Equal(t, u, uWithExistingLongURL)
+				assert.Equal(t, get, u)
+				assert.Equal(t, get, uWithExistingLongURL)
+			},
+		},
+		{
+			name: "err conflict",
+			url:  uWithExistingAlias,
+			check: func(t *testing.T, get *model.URL, err error) {
+				require.Nil(t, get)
+				require.ErrorIs(t, err, repository.ErrConflict)
 			},
 		},
 	}

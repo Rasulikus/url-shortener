@@ -3,7 +3,7 @@ package memory
 import (
 	"sync"
 
-	"github.com/Rasulikus/url-shortener/internal/domain/model"
+	"github.com/Rasulikus/url-shortener/internal/model"
 )
 
 type Memory struct {

@@ -5,12 +5,13 @@ import (
 	"net/url"
 )
 
-var InvalidURL = errors.New("invalid url")
+var ErrInvalidURL = errors.New("invalid url")
 
 func URL(u string) error {
 	_, err := url.ParseRequestURI(u)
 	if err != nil {
-		return InvalidURL
+		return ErrInvalidURL
 	}
+
 	return nil
 }
